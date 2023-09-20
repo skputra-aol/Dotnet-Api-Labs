@@ -1,0 +1,93 @@
+/// Dotnet 7
+
+$ dotnet new webapi -o TodoApi
+$ cd TodoApi
+$ dotnet add package Microsoft.EntityFrameworkCore.InMemory
+$ dotnet dev-certs https --trust
+$ code -r ../TodoApi
+$ dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design -v 7.0.0
+$ dotnet add package Microsoft.EntityFrameworkCore.Design -v 7.0.0
+$ dotnet add package Microsoft.EntityFrameworkCore.SqlServer -v 7.0.0
+$ dotnet tool uninstall -g dotnet-aspnet-codegenerator
+$ dotnet tool install -g dotnet-aspnet-codegenerator  // untuk android pake --arch
+$ dotnet tool update -g dotnet-aspnet-codegenerator
+$ dotnet run
+$ chrome https://localhost:<port>/swagger/index.html
+$ chrome https://localhost:<port>/weatherforecast
+$ nano Models/TodoItem.cs
+<<<<
+namespace TodoApi.Models;
+
+public class TodoItem
+{
+    public long Id { get; set; }
+    public string? Name { get; set; }
+    public bool IsComplete { get; set; }
+}
+>>>>
+
+$ nano Models/TodoContext.cs
+<<<<
+using Microsoft.EntityFrameworkCore;
+
+namespace TodoApi.Models;
+
+public class TodoContext : DbContext
+{
+    public TodoContext(DbContextOptions<TodoContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<TodoItem> TodoItems { get; set; } = null!;
+}
+<<<<
+
+$ nano Program.cs
+<<<<
+using Microsoft.EntityFrameworkCore;	// Added
+using TodoApi.Models;			// Added
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+builder.Services.AddDbContext<TodoContext>(opt =>
+    opt.UseInMemoryDatabase("TodoList"));	// Added
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
+>>>>
+
+$ dotnet aspnet-codegenerator controller -name TodoItemsController -async -api -m TodoItem -dc TodoContext -outDir Controllers
+
+$ nano Controllers/PostTodoItem.cs
+<<<<
+[HttpPost]
+public async Task<ActionResult<TodoItem>> PostTodoItem(TodoItem todoItem)
+{
+    _context.TodoItems.Add(todoItem);
+    await _context.SaveChangesAsync();
+
+    //    return CreatedAtAction("GetTodoItem", new { id = todoItem.Id }, todoItem);
+    return CreatedAtAction(nameof(GetTodoItem), new { id = todoItem.Id }, todoItem);
+}
+>>>>
+
+$ dotnet run
+$ chrome https://localhost:<port>/api/TodoItems
+$ chrome https://localhost:<port>/api/TodoItems/1
